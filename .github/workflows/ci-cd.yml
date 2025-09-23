@@ -1,0 +1,194 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - test
+          - prod
+
+env:
+  AZURE_FUNCTIONAPP_PACKAGE_PATH: 'src/functions'
+  DOTNET_VERSION: '8.0.x'
+  NODE_VERSION: '18'
+
+jobs:
+  # Build and test job
+  build-and-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 'Checkout GitHub Action'
+      uses: actions/checkout@v4
+
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+
+    - name: Restore dependencies
+      run: |
+        cd ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
+        dotnet restore
+
+    - name: Build
+      run: |
+        cd ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
+        dotnet build --configuration Release --no-restore
+
+    - name: Test
+      run: |
+        cd tests
+        dotnet test --no-restore --verbosity normal --collect:"XPlat Code Coverage" --results-directory ./coverage
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        directory: ./tests/coverage
+        fail_ci_if_error: false
+
+    - name: Publish Functions
+      run: |
+        cd ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
+        dotnet publish --configuration Release --output ./output
+
+    - name: Upload Functions Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: functions-package
+        path: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/output
+
+    - name: Build M365 Agent
+      run: |
+        cd src/agents
+        npm ci
+        npm run build
+        npm run package
+
+    - name: Upload Agent Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: agent-package
+        path: src/agents/dist
+
+  # Infrastructure deployment job
+  deploy-infrastructure:
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    environment: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.environment || (github.ref == 'refs/heads/main' && 'prod' || 'dev') }}
+    
+    steps:
+    - name: 'Checkout GitHub Action'
+      uses: actions/checkout@v4
+
+    - name: Azure CLI Login
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Set Environment Variables
+      run: |
+        ENV_NAME="${{ github.event_name == 'workflow_dispatch' && github.event.inputs.environment || (github.ref == 'refs/heads/main' && 'prod' || 'dev') }}"
+        echo "ENVIRONMENT=$ENV_NAME" >> $GITHUB_ENV
+        echo "RESOURCE_GROUP_NAME=mi-$ENV_NAME-rg" >> $GITHUB_ENV
+
+    - name: Deploy Infrastructure
+      run: |
+        # Update parameter files with subscription ID
+        sed -i "s/{subscription-id}/${{ secrets.AZURE_SUBSCRIPTION_ID }}/g" infrastructure/environments/${{ env.ENVIRONMENT }}.parameters.json
+        
+        # Deploy infrastructure
+        ./scripts/deployment/deploy-infrastructure.sh ${{ env.ENVIRONMENT }} ${{ secrets.AZURE_SUBSCRIPTION_ID }} ${{ env.RESOURCE_GROUP_NAME }}
+
+    - name: Get Deployment Outputs
+      id: deployment-outputs
+      run: |
+        DEPLOYMENT_NAME=$(az deployment group list --resource-group ${{ env.RESOURCE_GROUP_NAME }} --query "[0].name" --output tsv)
+        FUNCTION_APP_NAME=$(az deployment group show --resource-group ${{ env.RESOURCE_GROUP_NAME }} --name $DEPLOYMENT_NAME --query properties.outputs.functionAppName.value --output tsv)
+        echo "FUNCTION_APP_NAME=$FUNCTION_APP_NAME" >> $GITHUB_OUTPUT
+
+    outputs:
+      function-app-name: ${{ steps.deployment-outputs.outputs.FUNCTION_APP_NAME }}
+
+  # Application deployment job
+  deploy-application:
+    needs: [build-and-test, deploy-infrastructure]
+    runs-on: ubuntu-latest
+    environment: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.environment || (github.ref == 'refs/heads/main' && 'prod' || 'dev') }}
+    
+    steps:
+    - name: 'Checkout GitHub Action'
+      uses: actions/checkout@v4
+
+    - name: Download Functions Artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: functions-package
+        path: ./functions-package
+
+    - name: Download Agent Artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: agent-package
+        path: ./agent-package
+
+    - name: Azure CLI Login
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Deploy to Azure Functions
+      uses: Azure/functions-action@v1
+      with:
+        app-name: ${{ needs.deploy-infrastructure.outputs.function-app-name }}
+        package: './functions-package'
+
+    - name: Run Database Migrations
+      run: |
+        # Run database migrations/setup
+        cd scripts/maintenance
+        ./run-database-setup.sh ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.environment || (github.ref == 'refs/heads/main' && 'prod' || 'dev') }}
+
+  # Security scanning job
+  security-scan:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 'Checkout GitHub Action'
+      uses: actions/checkout@v4
+
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+
+    - name: Upload Trivy scan results to GitHub Security tab
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+    - name: Run CodeQL Analysis
+      uses: github/codeql-action/analyze@v2
+      with:
+        languages: 'csharp, javascript'

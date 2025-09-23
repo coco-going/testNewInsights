@@ -1,0 +1,32 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "environment": {
+      "value": "prod"
+    },
+    "location": {
+      "value": "East US 2"
+    },
+    "sqlAdminUsername": {
+      "value": "sqladmin"
+    },
+    "sqlAdminPassword": {
+      "reference": {
+        "keyVault": {
+          "id": "/subscriptions/{subscription-id}/resourceGroups/mi-prod-secrets/providers/Microsoft.KeyVault/vaults/mi-prod-secrets-kv"
+        },
+        "secretName": "sql-admin-password"
+      }
+    },
+    "openAiServiceName": {
+      "value": "openai-prod-mi"
+    },
+    "enableAzureSearch": {
+      "value": true
+    },
+    "enableFabricIntegration": {
+      "value": false
+    }
+  }
+}
