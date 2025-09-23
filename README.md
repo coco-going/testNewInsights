@@ -12,7 +12,8 @@ The solution provides:
 
 ## Documentation
 
-- **[Architecture.md](./Architecture.md)** - Comprehensive architecture document with component analysis, recommendations, and implementation guidance
+- **[Architecture.md](./Architecture.md)** - Comprehensive architecture document with component analysis, alternatives, and implementation guidance
+- **[Final Architecture.md](./Final%20Architecture.md)** - Final recommended architecture, implementation plan, and cost analysis
 
 ## Key Features
 
@@ -34,6 +35,8 @@ The solution provides:
 - **Transcript Retrieval**: Microsoft Graph API with Teams Call Records
 - **AI Processing**: Azure OpenAI Service with GPT-4
 - **Data Storage**: Azure SQL Database with JSON Support  
-- **Conversational Interface**: Azure Bot Framework with Teams App
+- **Conversational Interface**: M365 Agents SDK Declarative Agent
 
 For detailed analysis of all options, pros/cons, licensing requirements, and security considerations, see the complete [Architecture document](./Architecture.md).
+
+For the final recommended implementation plan, cost analysis, and deployment guide, see the [Final Architecture document](./Final%20Architecture.md).
