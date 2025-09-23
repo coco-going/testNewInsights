@@ -1,0 +1,40 @@
+{
+  "name": "marketing-insights-agent",
+  "version": "1.0.0",
+  "description": "M365 Declarative Agent for Marketing Insights",
+  "main": "src/index.js",
+  "scripts": {
+    "build": "tsc && npm run copy-files",
+    "copy-files": "cp -r manifest dist/ && cp package.json dist/",
+    "package": "zip -r marketing-insights-agent.zip dist/",
+    "dev": "nodemon --exec ts-node src/index.ts",
+    "start": "node dist/index.js",
+    "test": "jest",
+    "lint": "eslint src --ext .ts,.js",
+    "lint:fix": "eslint src --ext .ts,.js --fix"
+  },
+  "dependencies": {
+    "@microsoft/teams-js": "^2.19.0",
+    "@azure/identity": "^4.0.1",
+    "@azure/storage-blob": "^12.17.0",
+    "axios": "^1.6.2",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.2",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.5",
+    "@types/express": "^4.17.21",
+    "@types/jsonwebtoken": "^9.0.5",
+    "@typescript-eslint/eslint-plugin": "^6.14.0",
+    "@typescript-eslint/parser": "^6.14.0",
+    "eslint": "^8.55.0",
+    "jest": "^29.7.0",
+    "nodemon": "^3.0.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

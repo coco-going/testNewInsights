@@ -1,0 +1,85 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/teams/v1.17/MicrosoftTeams.schema.json",
+  "manifestVersion": "1.17",
+  "version": "1.0.0",
+  "id": "{{APP_ID}}",
+  "developer": {
+    "name": "Marketing Insights Team",
+    "websiteUrl": "https://{{DOMAIN_NAME}}",
+    "privacyUrl": "https://{{DOMAIN_NAME}}/privacy",
+    "termsOfUseUrl": "https://{{DOMAIN_NAME}}/terms"
+  },
+  "icons": {
+    "color": "color.png",
+    "outline": "outline.png"
+  },
+  "name": {
+    "short": "Marketing Insights",
+    "full": "Marketing Insights AI Agent"
+  },
+  "description": {
+    "short": "AI-powered insights from Teams research interviews",
+    "full": "Get AI-powered insights from your Teams research interview transcripts. Ask questions about themes, sentiment, and key findings across all your research data."
+  },
+  "accentColor": "#FFFFFF",
+  "bots": [
+    {
+      "botId": "{{BOT_ID}}",
+      "scopes": [
+        "personal",
+        "team",
+        "groupchat"
+      ],
+      "supportsFiles": false,
+      "isNotificationOnly": false,
+      "supportsCalling": false,
+      "supportsVideo": false
+    }
+  ],
+  "composeExtensions": [
+    {
+      "botId": "{{BOT_ID}}",
+      "commands": [
+        {
+          "id": "searchTranscripts",
+          "context": [
+            "compose",
+            "commandBox"
+          ],
+          "description": "Search marketing research transcripts",
+          "title": "Search Insights",
+          "type": "query",
+          "parameters": [
+            {
+              "name": "query",
+              "title": "Search Query",
+              "description": "Enter your search query",
+              "inputType": "text"
+            }
+          ]
+        },
+        {
+          "id": "getThemes",
+          "context": [
+            "compose",
+            "commandBox"
+          ],
+          "description": "Get themes from recent transcripts",
+          "title": "Get Themes",
+          "type": "action"
+        }
+      ]
+    }
+  ],
+  "permissions": [
+    "identity",
+    "messageTeamMembers"
+  ],
+  "validDomains": [
+    "{{DOMAIN_NAME}}"
+  ],
+  "webApplicationInfo": {
+    "id": "{{AAD_APP_ID}}",
+    "resource": "https://RscBasedStoreApp"
+  }
+}

@@ -1,0 +1,88 @@
+# Ignore build artifacts
+bin/
+obj/
+dist/
+out/
+*.dll
+*.exe
+*.pdb
+
+# Ignore IDE files
+.vs/
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.idea/
+
+# Ignore OS files
+.DS_Store
+Thumbs.db
+
+# Ignore logs
+*.log
+logs/
+
+# Ignore local settings and secrets
+local.settings.json
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Ignore node modules
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Ignore temp files
+tmp/
+temp/
+*.tmp
+
+# Ignore package files
+*.zip
+*.tar.gz
+
+# Ignore Azure specific
+.azure/
+*.PublishSettings
+
+# Ignore test results
+TestResults/
+coverage/
+*.trx
+*.coverage
+*.coveragexml
+
+# Ignore database files
+*.db
+*.sqlite
+*.mdf
+*.ldf
+
+# Ignore Key files (should never be committed)
+*.key
+*.pfx
+*.p12
+
+# Ignore generated files
+Generated/
+auto-generated/
+*.generated.*
+
+# Terraform files (if using Terraform instead of Bicep)
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+
+# Keep important template files but ignore filled versions
+appsettings.Development.json
+appsettings.Production.json
+parameters.dev.local.json
+parameters.test.local.json
+parameters.prod.local.json
