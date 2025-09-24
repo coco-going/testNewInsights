@@ -336,6 +336,37 @@ After setting up local development:
 4. **Deploy to Dev**: Follow the [Deployment Guide](../deployment/DEPLOYMENT_GUIDE.md) for cloud deployment
 5. **Read Architecture**: Review [Architecture.md](../../Architecture.md) for system design details
 
+## Project Structure Reference
+
+```
+testNewInsights/
+├── src/
+│   ├── functions/                    # Azure Functions (.NET 8.0)
+│   │   ├── Functions/               # Function endpoints
+│   │   ├── Services/                # Business logic services
+│   │   ├── local.settings.example.json  # ← Copy this to local.settings.json
+│   │   └── host.json                # Function runtime configuration
+│   ├── agents/                      # M365 Agent (TypeScript)
+│   │   ├── src/                     # Agent source code
+│   │   ├── manifest/                # Teams app manifest
+│   │   └── package.json             # Node.js dependencies
+│   └── shared/                      # Shared libraries (.NET)
+├── infrastructure/
+│   ├── bicep/                       # Azure Bicep templates
+│   └── environments/                # Environment parameter files
+├── scripts/
+│   ├── deployment/                  # Infrastructure deployment scripts
+│   └── maintenance/                 # Database and operational scripts
+├── docs/
+│   ├── development/                 # ← This guide is here
+│   └── deployment/                  # Production deployment guide
+├── config/                          # Environment-specific configurations
+│   ├── dev/appsettings.dev.json    # Development configuration
+│   └── prod/appsettings.prod.json  # Production configuration
+└── tests/
+    └── unit/                        # Unit tests (.NET)
+```
+
 ## Key Vault Best Practices
 
 When moving from local development to Azure deployment, understanding Key Vault usage is crucial for security.
