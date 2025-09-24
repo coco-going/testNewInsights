@@ -284,11 +284,54 @@ To enable Microsoft Fabric integration:
 
 ## Security Considerations
 
-1. **Secrets Management**: All secrets stored in Azure Key Vault
-2. **Network Security**: Function Apps use HTTPS only
-3. **Access Control**: RBAC and Azure AD integration
-4. **Data Protection**: Encryption at rest and in transit
-5. **Compliance**: Audit logging and data retention policies
+### 1. Secrets Management
+All secrets are stored in Azure Key Vault following these best practices:
+
+#### Key Vault Secret Naming Conventions
+```
+SqlConnectionString       # Database connection string
+OpenAIKey                # Azure OpenAI API key
+OpenAIEndpoint           # Azure OpenAI endpoint URL
+GraphClientSecret        # Microsoft Graph client secret
+StorageConnectionString  # Azure Storage connection string
+AppInsightsKey          # Application Insights instrumentation key
+```
+
+#### Managed Identity Setup
+The Function App uses System-Assigned Managed Identity to access Key Vault:
+- **Role**: Key Vault Secrets User
+- **Scope**: Key Vault resource
+- **Access**: Read secrets only (principle of least privilege)
+
+#### Key Vault Reference Syntax
+Function App settings reference Key Vault secrets using:
+```
+@Microsoft.KeyVault(VaultName={vault-name};SecretName={secret-name})
+```
+
+### 2. Network Security
+- Function Apps use HTTPS only
+- Key Vault allows public access but uses RBAC
+- SQL Database uses encrypted connections
+- All inter-service communication is encrypted
+
+### 3. Access Control
+- RBAC and Azure AD integration throughout
+- Service principals for CI/CD pipelines
+- Managed identities for Azure service access
+- Principle of least privilege enforced
+
+### 4. Data Protection
+- Encryption at rest for all storage
+- Encryption in transit for all communications
+- Personal data anonymization where required
+- Audit logging for compliance
+
+### 5. Compliance
+- Audit logging and data retention policies
+- Security scanning in CI/CD pipeline
+- Regular security assessments
+- Documentation of security controls
 
 ## Next Steps
 

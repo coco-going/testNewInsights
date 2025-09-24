@@ -105,9 +105,19 @@ This repository contains a complete **code-first** implementation of the Marketi
 | **[Architecture.md](./Architecture.md)** | Comprehensive architecture analysis with component alternatives |
 | **[Final Architecture.md](./Final%20Architecture.md)** | Final recommended architecture and implementation plan |
 | **[Deployment Guide](./docs/deployment/DEPLOYMENT_GUIDE.md)** | Complete deployment instructions and configuration |
+| **[Local Development Guide](./docs/development/LOCAL_DEV_GUIDE.md)** | Step-by-step local development setup and best practices |
 | **[API Documentation](./docs/api/)** | REST API reference and examples |
 
 ## 🚦 Getting Started
+
+### For Local Development
+New to the project? Start with the [Local Development Guide](./docs/development/LOCAL_DEV_GUIDE.md) to:
+- Set up your local development environment with Docker
+- Configure Azure Functions and M365 Agent locally
+- Use mock services to avoid Azure costs during development
+- Follow the **Quick Start** for a minimal setup path
+
+### For Production Deployment
 
 ### 1. Review Architecture
 Start with the [Final Architecture document](./Final%20Architecture.md) to understand the solution design and implementation phases.
@@ -126,10 +136,13 @@ Run the included test suites and verify the conversational interface in Microsof
 
 ## 🔧 Development
 
+### Quick Setup
+For detailed local development instructions, see the **[Local Development Guide](./docs/development/LOCAL_DEV_GUIDE.md)**.
+
 ### Prerequisites for Development
 ```bash
 # Install .NET SDK
-dotnet --version  # Should be 6.0+
+dotnet --version  # Should be 8.0+
 
 # Install Node.js
 node --version    # Should be 18+
@@ -140,17 +153,23 @@ az --version
 
 ### Local Development Setup
 ```bash
-# Restore .NET dependencies
-cd src/functions
-dotnet restore
+# Clone and restore dependencies
+git clone <repository-url>
+cd testNewInsights
+dotnet restore && dotnet build
+cd src/agents && npm install
 
-# Install Node.js dependencies for M365 Agent
-cd ../agents
-npm install
+# Copy example configuration
+cp src/functions/local.settings.example.json src/functions/local.settings.json
+# Edit local.settings.json with your local settings
 
-# Run tests
-cd ../../tests/unit
-dotnet test
+# Start local services (Docker required)
+docker run -e "ACCEPT_EULA=Y" -e "MSSQL_SA_PASSWORD=DevPassword123!" -p 1433:1433 -d mcr.microsoft.com/mssql/server:2022-latest
+docker run -p 10000:10000 -p 10001:10001 -p 10002:10002 mcr.microsoft.com/azure-storage/azurite
+
+# Run applications
+cd src/functions && func start  # Terminal 1
+cd src/agents && npm run dev    # Terminal 2
 ```
 
 ### Build and Test
