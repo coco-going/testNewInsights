@@ -19,6 +19,71 @@ The solution supports three environments:
 - **test**: Testing environment with production-like configuration  
 - **prod**: Production environment with high availability and performance
 
+## 🚀 Production Deployment Happy Path
+
+For experienced users, here's the minimal sequence to get the solution live in production:
+
+### Prerequisites Checklist
+- [ ] Azure subscription with Contributor permissions
+- [ ] Azure CLI installed and logged in: `az login`
+- [ ] GitHub repository forked and cloned
+- [ ] Microsoft 365 tenant with Teams licenses
+
+### Rapid Deployment (30-minute path)
+
+1. **Setup GitHub Secrets** (5 min):
+   ```bash
+   # Get your subscription details
+   az account show --output table
+   
+   # Add to GitHub Secrets:
+   # AZURE_SUBSCRIPTION_ID, AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET
+   ```
+
+2. **Configure App Registrations** (10 min):
+   ```bash
+   # Create Azure AD apps (see Step 1 below for details)
+   az ad app create --display-name "Marketing Insights - Main"
+   az ad app create --display-name "Marketing Insights - Graph"
+   ```
+
+3. **Deploy via GitHub Actions** (10 min):
+   ```bash
+   # Push to main branch triggers deployment
+   git push origin main
+   
+   # Or trigger manually via GitHub Actions UI
+   # Actions → CI/CD Pipeline → Run workflow → select 'prod'
+   ```
+
+4. **Post-deployment Configuration** (5 min):
+   ```bash
+   # Add secrets to Key Vault
+   az keyvault secret set --vault-name mi-prod-kv-{suffix} --name "OpenAIKey" --value "{your-key}"
+   az keyvault secret set --vault-name mi-prod-kv-{suffix} --name "GraphClientSecret" --value "{your-secret}"
+   
+   # Update Function App settings with Key Vault references
+   az functionapp config appsettings set --name mi-prod-func-{suffix} --resource-group mi-prod-rg \
+     --settings "OpenAI:ApiKey=@Microsoft.KeyVault(VaultName=mi-prod-kv-{suffix};SecretName=OpenAIKey)"
+   ```
+
+5. **Verify Deployment**:
+   - ✅ Function App accessible: `https://mi-prod-func-{suffix}.azurewebsites.net`
+   - ✅ Key Vault accessible with proper permissions
+   - ✅ Database created and accessible
+   - ✅ Application Insights receiving telemetry
+
+### Quick Reference Files
+- **Infrastructure**: `infrastructure/bicep/main.bicep`
+- **CI/CD Pipeline**: `.github/workflows/ci-cd.yml`
+- **Environment Config**: `infrastructure/environments/prod.parameters.json`
+- **Database Scripts**: `scripts/maintenance/run-database-setup.sh`
+- **Function Config**: `src/functions/local.settings.example.json` (for reference)
+
+---
+
+## Detailed Step-by-Step Instructions
+
 ## Step 1: Azure Prerequisites
 
 ### 1.1 Create Azure AD App Registrations
@@ -284,11 +349,54 @@ To enable Microsoft Fabric integration:
 
 ## Security Considerations
 
-1. **Secrets Management**: All secrets stored in Azure Key Vault
-2. **Network Security**: Function Apps use HTTPS only
-3. **Access Control**: RBAC and Azure AD integration
-4. **Data Protection**: Encryption at rest and in transit
-5. **Compliance**: Audit logging and data retention policies
+### 1. Secrets Management
+All secrets are stored in Azure Key Vault following these best practices:
+
+#### Key Vault Secret Naming Conventions
+```
+SqlConnectionString       # Database connection string
+OpenAIKey                # Azure OpenAI API key
+OpenAIEndpoint           # Azure OpenAI endpoint URL
+GraphClientSecret        # Microsoft Graph client secret
+StorageConnectionString  # Azure Storage connection string
+AppInsightsKey          # Application Insights instrumentation key
+```
+
+#### Managed Identity Setup
+The Function App uses System-Assigned Managed Identity to access Key Vault:
+- **Role**: Key Vault Secrets User
+- **Scope**: Key Vault resource
+- **Access**: Read secrets only (principle of least privilege)
+
+#### Key Vault Reference Syntax
+Function App settings reference Key Vault secrets using:
+```
+@Microsoft.KeyVault(VaultName={vault-name};SecretName={secret-name})
+```
+
+### 2. Network Security
+- Function Apps use HTTPS only
+- Key Vault allows public access but uses RBAC
+- SQL Database uses encrypted connections
+- All inter-service communication is encrypted
+
+### 3. Access Control
+- RBAC and Azure AD integration throughout
+- Service principals for CI/CD pipelines
+- Managed identities for Azure service access
+- Principle of least privilege enforced
+
+### 4. Data Protection
+- Encryption at rest for all storage
+- Encryption in transit for all communications
+- Personal data anonymization where required
+- Audit logging for compliance
+
+### 5. Compliance
+- Audit logging and data retention policies
+- Security scanning in CI/CD pipeline
+- Regular security assessments
+- Documentation of security controls
 
 ## Next Steps
 
